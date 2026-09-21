@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#05030b">
+<title>Para Elizabeth 🌻</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05030b}
+body{font-family:Georgia,serif;color:white;touch-action:manipulation}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#intro{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#05030b;padding:25px;transition:opacity 1s}
+#intro.off{opacity:0;pointer-events:none}
+.flower{font-size:76px;filter:drop-shadow(0 0 25px #ffc400);animation:pulse 1.8s infinite}
+.title{font-size:29px;color:#ffe78a;text-shadow:0 0 18px #ffb800;margin:20px 0}
+.button{padding:14px 26px;border:1px solid #ffd24a;border-radius:30px;background:#1b1504;color:#fff1ad;box-shadow:0 0 22px #8f6500;font-family:Arial,sans-serif}
+#text{position:fixed;z-index:2;top:8%;left:50%;transform:translateX(-50%);width:92%;text-align:center;opacity:0;transition:opacity 2s;pointer-events:none}
+#text.on{opacity:1}
+.kicker{font:14px Arial,sans-serif;letter-spacing:3px;color:#ffe27a}
+h1{font-size:clamp(31px,9vw,62px);line-height:1.05;margin:9px 0;color:#fff5c7;text-shadow:0 0 10px #ffd23d,0 0 30px #ff9d00}
+p{font-size:clamp(15px,4.5vw,23px);line-height:1.45;color:#fff0b0;text-shadow:0 0 12px #ffae00}
+#hint{position:fixed;bottom:4%;left:50%;transform:translateX(-50%);font:11px Arial;color:#ffe99a;opacity:0;z-index:3}
+#hint.on{opacity:.65}
+@keyframes pulse{50%{transform:scale(1.08)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="intro">
+  <div class="flower">🌻</div>
+  <div class="title">Un universo de flores amarillas para Elizabeth</div>
+  <div class="button">Toca para comenzar ✨</div>
+</div>
+
+<div id="text">
+  <div class="kicker">PARA MI ESPOSA ELIZABETH ❤️</div>
+  <h1>Elizabeth, eres mi flor amarilla. 🌻</h1>
+  <p>
+    Elizabeth, en un universo lleno de estrellas, yo volvería a encontrarte a ti.
+    Que cada flor amarilla represente una razón para amarte,
+    y que nuestro amor siga floreciendo por siempre. 💛
+  </p>
+</div>
+
+<div id="hint">TOCA LA PANTALLA PARA HACER FLORECER EL UNIVERSO ✨</div>
+
+<script>
+(function(){
+"use strict";
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+const intro=document.getElementById("intro");
+const text=document.getElementById("text");
+const hint=document.getElementById("hint");
+
+let W=0,H=0,dpr=1,running=false,startTime=0,last=0;
+let stars=[],flowers=[],particles=[],bursts=[],heart=[];
+
+function rand(a,b){return Math.random()*(b-a)+a}
+function resize(){
+ dpr=Math.min(window.devicePixelRatio||1,2);
+ W=window.innerWidth;H=window.innerHeight;
+ canvas.width=W*dpr;canvas.height=H*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ makeHeart();seed();
+}
+function makeHeart(){
+ heart=[];
+ const s=Math.min(W,H)*.0105,cx=W/2,cy=H*.57;
+ for(let t=0;t<Math.PI*2;t+=.035){
+   const xx=16*Math.pow(Math.sin(t),3);
+   const yy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+   heart.push({x:cx+xx*s,y:cy-yy*s});
+ }
+}
+function seed(){
+ stars=[];flowers=[];particles=[];bursts=[];
+ for(let i=0;i<Math.min(700,Math.floor(W*H/1800));i++){
+   stars.push({x:rand(0,W),y:rand(0,H),r:rand(.3,1.7),a:rand(.2,1),phase:rand(0,7),speed:rand(.01,.035)});
+ }
+ for(let i=0;i<18;i++) newFlower();
+}
+function newFlower(x,y){
+ flowers.push({
+   x:x===undefined?rand(0,W):x,y:y===undefined?rand(H*.2,H+50):y,
+   vy:rand(-.45,-.12),vx:rand(-.15,.15),size:rand(18,40),
+   rot:rand(-.5,.5),vr:rand(-.006,.006),phase:rand(0,7),a:rand(.55,1)
+ });
+}
+function burst(x,y,n){
+ for(let i=0;i<n;i++){
+   const a=rand(0,Math.PI*2),s=rand(.5,4);
+   bursts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(30,85),age:0,r:rand(.6,2.2)});
+ }
+}
+function heartBurst(){
+ for(let i=0;i<Math.min(900,heart.length*3);i++){
+   const q=heart[i%heart.length],a=rand(0,Math.PI*2),s=rand(-7,7);
+   particles.push({x:rand(0,W),y:rand(H*.32,H*.8),tx:q.x+Math.cos(a)*s,ty:q.y+Math.sin(a)*s,
+     vx:0,vy:0,r:rand(.6,1.8),a:rand(.35,1)});
+ }
+ burst(W/2,H*.57,180);
+}
+function drawBackground(){
+ ctx.fillStyle="rgba(5,3,11,.28)";
+ ctx.fillRect(0,0,W,H);
+ const g=ctx.createRadialGradient(W*.5,H*.52,0,W*.5,H*.52,Math.max(W,H)*.7);
+ g.addColorStop(0,"rgba(125,75,0,.12)");
+ g.addColorStop(.35,"rgba(40,25,80,.07)");
+ g.addColorStop(1,"rgba(0,0,0,0)");
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function drawStars(t){
+ for(const s of stars){
+   const a=s.a*(.55+.45*Math.sin(t*s.speed+s.phase));
+   ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+   ctx.fillStyle="rgba(255,245,190,"+a+")";
+   ctx.shadowBlur=8;ctx.shadowColor="#ffc83d";ctx.fill();
+ }
+ ctx.shadowBlur=0;
+}
+function drawFlowers(dt){
+ for(const f of flowers){
+   f.phase+=.018*dt;f.x+=(f.vx+Math.sin(f.phase)*.1)*dt;f.y+=f.vy*dt;f.rot+=f.vr*dt;
+   if(f.y<-60){f.y=H+50;f.x=rand(0,W)}
+   ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot);ctx.globalAlpha=f.a;
+   ctx.font=f.size+"px serif";ctx.textAlign="center";ctx.textBaseline="middle";
+   ctx.shadowBlur=18;ctx.shadowColor="#ffc400";ctx.fillText("🌻",0,0);
+   ctx.restore();
+ }
+ ctx.globalAlpha=1;ctx.shadowBlur=0;
+}
+function drawHeart(dt){
+ for(const p of particles){
+   p.vx+=(p.tx-p.x)*.0019*dt;p.vy+=(p.ty-p.y)*.0019*dt;
+   p.vx*=Math.pow(.9,dt);p.vy*=Math.pow(.9,dt);
+   p.x+=p.vx*dt;p.y+=p.vy*dt;
+   ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+   ctx.fillStyle="rgba(255,194,45,"+p.a+")";
+   ctx.shadowBlur=10;ctx.shadowColor="#ffad00";ctx.fill();
+ }
+ ctx.shadowBlur=0;
+}
+function drawBursts(dt){
+ for(let i=bursts.length-1;i>=0;i--){
+   const b=bursts[i];b.age+=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
+   b.vx*=.97;b.vy*=.97;
+   const a=1-b.age/b.life;
+   ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+   ctx.fillStyle="rgba(255,220,90,"+a+")";ctx.shadowBlur=12;ctx.shadowColor="#ffbd20";ctx.fill();
+   if(b.age>b.life)bursts.splice(i,1);
+ }
+ ctx.shadowBlur=0;
+}
+function animate(now){
+ if(!running)return;
+ const dt=Math.min(2.5,(now-last)/16.666||1);last=now;
+ drawBackground();drawStars(now/16);drawFlowers(dt);
+ if(now-startTime>1300 && particles.length===0){
+   heartBurst();text.classList.add("on");hint.classList.add("on");
+ }
+ drawHeart(dt);drawBursts(dt);
+ requestAnimationFrame(animate);
+}
+function start(e){
+ if(e)e.preventDefault();
+ if(running)return;
+ running=true;intro.classList.add("off");
+ startTime=last=performance.now();
+ burst(W/2,H*.55,150);
+ requestAnimationFrame(animate);
+}
+intro.addEventListener("click",start);
+intro.addEventListener("pointerup",start);
+intro.addEventListener("touchend",start,{passive:false});
+window.addEventListener("resize",resize);
+window.addEventListener("pointerdown",function(e){
+ if(!running || intro.contains(e.target))return;
+ burst(e.clientX,e.clientY,35);
+ for(let i=0;i<2;i++)newFlower(e.clientX+rand(-25,25),e.clientY+rand(-10,10));
+});
+resize();
+})();
+</script>
+</body>
+</html>
